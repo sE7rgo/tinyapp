@@ -9,18 +9,17 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
-      <% if (username) { %>
-        <tr>
-        <td>Buon Giorno <%= username %></td>
-        <form class="form-inline" action='/urls/logout' method="POST"></form>
-        <button type="logout" class="btn btn-outline-dark">Log out</button>
-      </tr>
+    </div>
+      <% if (username) { console.log(username)%>
+        <div>Buon Giorno <%= username %></div>
+        <form class="form-inline" action='/urls/logout' method="POST">
+        <button type="submit" class="btn btn-outline-dark">Log out</button>
+      </form>
       <% } else { %>
       <form class="form-inline" action='/urls/login' method="POST">
         <div style="padding-left: 40em;" class="form-group mb-2">
           <input class="form-control" type="text" name="username" placeholder="Username" style="width: 200px; margin: 1em">
           <button type="submit" class="btn btn-primary">Login</button>
-        </div>
       </form>
       <% } %>
     </tr>
