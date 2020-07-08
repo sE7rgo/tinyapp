@@ -1,4 +1,5 @@
 const express = require("express");
+const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -6,6 +7,8 @@ app.set("view engine", "ejs");
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
+
+app.use(cookieParser());
 
 
 const urlDatabase = {
@@ -37,9 +40,30 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = { 
+    urls: urlDatabase,
+    username: req.cookies["username"] 
+  };
   res.render("urls_index", templateVars);
 });
+
+//handle login
+
+app.post('/urls/login', (req, res) => {
+  const name = req.body.username;
+  res.cookie('username', name);
+  res.redirect('/urls');
+});
+
+// handle logout
+
+app.post('/urls/logout', (req, res) => {
+  const username = req.cookies["username"];
+  res.clearCookie(username);
+  res.redirect('/urls');
+})
+
+//new shortURL
 
 app.post("/urls/new", (req, res) => {
   const shortUrl = generateRandomString(6);
@@ -48,15 +72,18 @@ app.post("/urls/new", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let templateVars = { shortURL: req.params.shortURL, longURL:  urlDatabase[req.params.shortURL], username: req.cookies["username"] };
+  res.render("urls_new", templateVars);
 });
+
+//redirect to original URL
 
 app.get("/u/:shortURL", (req, res) => {
   res.redirect(`${urlDatabase[req.params.shortURL]}`)
 })
 
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL:  urlDatabase[req.params.shortURL]};
+  let templateVars = { shortURL: req.params.shortURL, longURL:  urlDatabase[req.params.shortURL], username: req.cookies["username"] };
   res.render("urls_show", templateVars);
 });
 
@@ -68,6 +95,7 @@ app.post('/urls/:shortURL', (req, res) => {
   res.redirect('/urls');
 })
 
+// delete url
 
 app.post('/urls/:shortURL/delete', (req, res) => {
 	const shortURL = req.params.shortURL;
