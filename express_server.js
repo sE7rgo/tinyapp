@@ -74,29 +74,51 @@ app.get("/urls/register", (req, res) => {
 
 app.post("/urls/register", (req, res) => {
   const randomUserId = `user${generateRandomString(6)}`;
-  users[randomUserId] = {};
-  users[randomUserId].id = randomUserId;
-  users[randomUserId].email = req.body.email;
-  users[randomUserId].password = req.body.password;
-  res.cookie('username', randomUserId);
-  res.redirect('/urls');
+
+    Object.values(users).forEach(user => {
+    //check if email exist
+    if (user.email !== req.body.email) {
+      //check if empty string
+      if (req.body.email !== '' && req.body.password !== '') {
+        //make a new user obj
+        users[randomUserId] = {};
+        users[randomUserId].id = randomUserId;
+        users[randomUserId].email = req.body.email;
+        users[randomUserId].password = req.body.password;
+
+        return res.cookie('username', randomUserId).redirect('/urls');
+      } else {
+        return res.status(400).send(`Can't be empty field`);
+      }
+    } else {
+      return res.status(400).send('email already exist');
+    }
+  })
 })
 
-//handle login
-
-app.get('/urls/login', (req, res) => {
-  let templateVars = {
-    username: req.cookies["username"] 
-  };
+  //handle login
+  
+  app.get('/urls/login', (req, res) => {
+    let templateVars = {
+      username: req.cookies["username"] 
+    };
   res.render("urls_login", templateVars);
 })
 
 app.post('/urls/login', (req, res) => {
-  const name = req.body.username;
-  const password = req.body.password;
-  res.cookie('username', name);
-  //res.cookie('password', password)
-  res.redirect('/urls');
+  const { email, password } = req.body;
+  
+  Object.values(users).forEach(user => {
+    if ( user.email === email) {
+      if (user.password === password) {
+        return res.cookie('username', user.id).redirect('/urls');
+      } else {
+        return res.render('/urls/login', { error: 'Password mismatch', email: email })
+      }
+    } else {
+      return res.render('/urls/login', { error: 'Wrong Email' });
+    }
+  })
 });
 
 
