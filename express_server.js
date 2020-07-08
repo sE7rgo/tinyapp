@@ -56,9 +56,10 @@ app.get("/hello", (req, res) => {
 //home page
 
 app.get("/urls", (req, res) => {
+  console.log(req.cookies["user_id"])
   let templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"] 
+    user_id: req.cookies["user_id"] 
   };
   res.render("urls_index", templateVars);
 });
@@ -67,7 +68,7 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/register", (req, res) => {
   let templateVars = {
-    username: req.cookies["username"] 
+    user_id: req.cookies["user_id"] 
   };
   res.render("urls_register", templateVars);
 });
@@ -86,12 +87,12 @@ app.post("/urls/register", (req, res) => {
         users[randomUserId].email = req.body.email;
         users[randomUserId].password = req.body.password;
 
-        return res.cookie('username', randomUserId).redirect('/urls');
+        return res.cookie('user_id', randomUserId).redirect('/urls');
       } else {
-        return res.status(400).send(`Can't be empty field`);
+          return res.status(400).send(`Can't be empty field`);
       }
     } else {
-      return res.status(400).send('email already exist');
+        return res.status(400).send('email already exist');
     }
   })
 })
@@ -100,7 +101,7 @@ app.post("/urls/register", (req, res) => {
   
   app.get('/urls/login', (req, res) => {
     let templateVars = {
-      username: req.cookies["username"] 
+      user_id: req.cookies["user_id"] 
     };
   res.render("urls_login", templateVars);
 })
@@ -111,12 +112,14 @@ app.post('/urls/login', (req, res) => {
   Object.values(users).forEach(user => {
     if ( user.email === email) {
       if (user.password === password) {
-        return res.cookie('username', user.id).redirect('/urls');
+        return res.cookie('user_id', user.id).redirect('/urls');
       } else {
-        return res.render('/urls/login', { error: 'Password mismatch', email: email })
+        //return res.render('urls_login', { error: 'Password mismatch', email: email })
+        return res.status(403).send('Wrong Password');
       }
     } else {
-      return res.render('/urls/login', { error: 'Wrong Email' });
+      //return res.render('urls_login', { error: 'Wrong Email' });
+      return res.status(403).send('E-mail cannot be found');
     }
   })
 });
@@ -125,8 +128,7 @@ app.post('/urls/login', (req, res) => {
 // handle logout
 
 app.post('/urls/logout', (req, res) => {
-  const username = req.cookies["username"];
-  res.clearCookie('username', { path: '/' });
+  res.clearCookie('user_id', { path: '/' });
   res.redirect('/urls');
 })
 
@@ -139,12 +141,19 @@ app.post("/urls/new", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = { 
-    shortURL: req.params.shortURL, 
-    longURL:  urlDatabase[req.params.shortURL], 
-    username: req.cookies["username"]
-  };
-  res.render("urls_new", templateVars);
+  const userId = req.cookies['user_id']
+  Object.values(users).forEach(user => {
+    if ( user.id === userId) {
+      let templateVars = { 
+        shortURL: req.params.shortURL, 
+        longURL:  urlDatabase[req.params.shortURL], 
+        user_id: req.cookies["user_id"]
+      };
+      return res.render("urls_new", templateVars);
+    } else {
+        return res.redirect('/urls/login');
+    }
+  })
 });
 
 //redirect to original URL
@@ -158,7 +167,7 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { 
     shortURL: req.params.shortURL, 
     longURL:  urlDatabase[req.params.shortURL], 
-    username: req.cookies["username"]
+    user_id: req.cookies["user_id"]
   };
   res.render("urls_show", templateVars);
 });
