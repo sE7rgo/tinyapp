@@ -70,7 +70,16 @@ app.get("/urls/register", (req, res) => {
     username: req.cookies["username"] 
   };
   res.render("urls_register", templateVars);
+});
 
+app.post("/urls/register", (req, res) => {
+  const randomUserId = `user${generateRandomString(6)}`;
+  users[randomUserId] = {};
+  users[randomUserId].id = randomUserId;
+  users[randomUserId].email = req.body.email;
+  users[randomUserId].password = req.body.password;
+  res.cookie('username', randomUserId);
+  res.redirect('/urls');
 })
 
 //handle login
