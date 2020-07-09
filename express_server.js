@@ -10,6 +10,8 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.use(cookieParser());
 
+const bcrypt = require('bcrypt');
+
 
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "user2RandomID" },
@@ -24,12 +26,12 @@ const users = {
   "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+    password: "$2b$10$xFX1l79O0DABGREO3jg.dOnngpDvHZBP6VUmRzM2lDm6M.aQ/t6Au"
   },
  "user2RandomID": {
     id: "user2RandomID", 
     email: "user2@example.com", 
-    password: "dishwasher-funk"
+    password: "$2b$10$/qVwp3Z7RZBYNqTzdUsRgezGo.U/nQmcz24yFyGs/y9RFZWOXwRAy"
   }
 }
 
@@ -70,7 +72,6 @@ app.get("/hello", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const userUrl = urlsForUser(req.cookies["user_id"]);
-  console.log(urlDatabase)
   let templateVars = {
     urls: userUrl,
     user_id: req.cookies["user_id"]
@@ -94,10 +95,10 @@ app.post("/urls/register", (req, res) => {
   }
     Object.values(users).forEach(user => {
     //check if email exist
-    console.log('user.email', user.email, 'req.body', req.body.email)
+
       if (user.email === req.body.email) {
-        console.log('inside if =>>>>')
-        return res.status(403).render('urls_register', { 
+        return res.status(403).render('urls_register', 
+        { 
           error: 'Email is Already Registered', 
           email: null, 
           user_id: null 
@@ -110,7 +111,10 @@ app.post("/urls/register", (req, res) => {
   users[randomUserId] = {};
         users[randomUserId].id = randomUserId;
         users[randomUserId].email = req.body.email;
-        users[randomUserId].password = req.body.password;
+        //hash passw
+        const hashedPassword = bcrypt.hashSync(req.body.password, 10);
+        users[randomUserId].password = hashedPassword;
+        console.log(hashedPassword)
         return res.cookie('user_id', randomUserId).redirect('/urls');
 })
 
@@ -126,11 +130,13 @@ app.post("/urls/register", (req, res) => {
 })
 
 app.post('/urls/login', (req, res) => {
+
   const { email, password } = req.body;
+  const hashedPassword = bcrypt.hashSync(req.body.password, 10);
   
   Object.values(users).forEach(user => {
     if ( user.email === email) {
-      if (user.password === password) {
+      if (bcrypt.compareSync(password, hashedPassword)) {
         return res.cookie('user_id', user.id).redirect('/urls');
       } else {
         //wrong pass
@@ -208,7 +214,7 @@ app.post('/urls/:shortURL', (req, res) => {
   const userId = req.cookies['user_id'];
   const userUrls = urlsForUser(userId);
   const userUrl = userUrls[req.params.shortURL];
-  console.log(userUrl)
+
   //check if user is maste :)
   if (userUrl.userID === userId) {
     userUrl.longURL = req.body.longURL;
