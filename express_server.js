@@ -66,19 +66,25 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Welcome to the internet. <b>Please Follow me</b></body></html>\n");
-});
-
 //----------------------home page--------------------------------
 
 app.get("/urls", (req, res) => {
-  const userUrl = urlsForUser(req.session.user_id);
+  const userId = req.session.user_id;
+  const userUrl = urlsForUser(userId);
+  if (userId in users) {
   let templateVars = {
     urls: userUrl,
-    user_id: req.session.user_id
+    user_id: req.session.user_id,
+    email: users[userId].email
   };
   res.render("urls_index", templateVars);
+} else {
+  return res.status(403).render('urls_login', {
+    error: 'Access forbiden, plaese Login',
+    email: null,
+    user_id: null
+  });
+}
 });
 
 //----------------------registration page-------------------------
@@ -86,7 +92,8 @@ app.get("/urls", (req, res) => {
 app.get("/urls/register", (req, res) => {
   if (!req.session.user_id){
     let templateVars = {
-      user_id: null
+      user_id: null,
+      error: null
     };
     res.render("urls_register", templateVars);
   } else {
@@ -99,16 +106,18 @@ app.post("/urls/register", (req, res) => {
   const randomUserId = `user${generateRandomString(6)}`;//generate random user_id
   const user = getUserByEmail(email, users);//existing user
   if (email === '' && password === '') {
-    return res.status(400).send(`Can't be empty field`);
+    return res.status(400).render('urls_register', {
+      error: `Can't be empty field`,
+      email: null,
+      user_id: null
+    });
   }
   if (user) {// check if email already exist
-    return res.status(403).render('urls_register',
-      {
-        error: 'Email is Already Registered',
-        email: null,
-        user_id: null
-      });
-
+    return res.status(400).render('urls_register', {
+      error: `Email is Already Registered`,
+      email: email,
+      user_id: null
+    });
   } else {// create new user obj
     users[randomUserId] = {};
     users[randomUserId].id = randomUserId;
@@ -129,7 +138,8 @@ app.get('/urls/login', (req, res) => {
   let templateVars = {
     user_id: req.session.user_id,
     email: null,
-    error: null
+    error: null,
+    email: null
   };
   res.render("urls_login", templateVars);
 });
@@ -154,7 +164,7 @@ app.post('/urls/login', (req, res) => {
   } 
   //wrong email
   return res.status(403).render('urls_login', {
-    error: 'Incorrect email address',
+    error: 'The Email Address field must contain a valid email address',
     email: null,
     user_id: null
   });
@@ -165,7 +175,7 @@ app.post('/urls/login', (req, res) => {
 
 app.post('/urls/logout', (req, res) => {
   req.session.user_id = null;
-  res.redirect('/urls');
+  res.redirect('/urls/login');
 });
 
 //----------------------create new shortURL----------------------
@@ -186,15 +196,17 @@ app.get("/urls/new", (req, res) => {
     let templateVars = {
       shortURL: req.params.shortURL,
       longURL:  urlDatabase[req.params.shortURL],
-      user_id: userId
+      user_id: userId,
+      email: users[userId].email
     };
     return res.render("urls_new", templateVars);
   }
   return res.render('urls_login',
     {
-      error: 'Authorization required',
+      error: 'Authorization required, please login',
       email: null,
-      user_id: null
+      user_id: null,
+      email: null
     });
 });
 
@@ -217,7 +229,8 @@ app.get("/urls/:shortURL", (req, res) => {
     let templateVars = {
       shortURL: req.params.shortURL,
       longURL:  userUrl.longURL,
-      user_id: req.session.user_id
+      user_id: req.session.user_id,
+      email: users[req.params.shortURL].email
     };
     res.render("urls_show", templateVars);
   } else {
