@@ -18,6 +18,7 @@ app.use(cookieSession({
 }));
 
 const bcrypt = require('bcrypt');
+const { response } = require('express');
 const saltRounds = 10;
 
 const urlDatabase = {
@@ -56,7 +57,7 @@ const users = {
 
 app.get("/", (req, res) => {
   if (!req.session.user_id){
-    return res.redirect('/urls/login');
+    return res.redirect('/login');
   } else {
     return res.redirect('/urls');
   }
@@ -74,49 +75,46 @@ app.get("/urls", (req, res) => {
   if (userId in users) {
   let templateVars = {
     urls: userUrl,
-    user_id: req.session.user_id,
     email: users[userId].email
   };
   res.render("urls_index", templateVars);
 } else {
-  return res.status(403).render('urls_login', {
-    error: 'Access forbiden, plaese Login',
-    email: null,
-    user_id: null
-  });
+  return res.status(403).render('login',
+    {
+      error: 'Authorization required, please login',
+      email: null,
+    });
 }
 });
 
 //----------------------registration page-------------------------
 
-app.get("/urls/register", (req, res) => {
+app.get("/register", (req, res) => {
   if (!req.session.user_id){
     let templateVars = {
-      user_id: null,
+      email: null,
       error: null
     };
-    res.render("urls_register", templateVars);
+    res.render("register", templateVars);
   } else {
     return res.redirect('/urls');
   }
 });
 
-app.post("/urls/register", (req, res) => {
+app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const randomUserId = `user${generateRandomString(6)}`;//generate random user_id
   const user = getUserByEmail(email, users);//existing user
-  if (email === '' && password === '') {
-    return res.status(400).render('urls_register', {
+  if (email === '' || password === '') {
+    return res.status(400).render('register', {
       error: `Can't be empty field`,
       email: null,
-      user_id: null
     });
   }
   if (user) {// check if email already exist
-    return res.status(400).render('urls_register', {
+    return res.status(400).render('register', {
       error: `Email is Already Registered`,
-      email: email,
-      user_id: null
+      email: null,
     });
   } else {// create new user obj
     users[randomUserId] = {};
@@ -134,17 +132,15 @@ app.post("/urls/register", (req, res) => {
 
 //----------------------login page--------------------------------  
 
-app.get('/urls/login', (req, res) => {
+app.get('/login', (req, res) => {
   let templateVars = {
-    user_id: req.session.user_id,
     email: null,
     error: null,
-    email: null
   };
-  res.render("urls_login", templateVars);
+  res.render("login", templateVars);
 });
 
-app.post('/urls/login', (req, res) => {
+app.post('/login', (req, res) => {
 
   const { email, password } = req.body;
   const user = getUserByEmail(email, users);//existing user
@@ -154,28 +150,26 @@ app.post('/urls/login', (req, res) => {
       return res.redirect('/urls');
     } else {
       //wrong pass
-      return res.status(403).render('urls_login',
+      return res.status(403).render('login',
         {
           error: 'Password mismatch',
           email: email,
-          user_id: null
         });
     }
   } 
   //wrong email
-  return res.status(403).render('urls_login', {
+  return res.status(403).render('login', {
     error: 'The Email Address field must contain a valid email address',
     email: null,
-    user_id: null
   });
 });
 
 
 //---------------------- logout --------------------------------
 
-app.post('/urls/logout', (req, res) => {
+app.post('/logout', (req, res) => {
   req.session.user_id = null;
-  res.redirect('/urls/login');
+  res.redirect('/login');
 });
 
 //----------------------create new shortURL----------------------
@@ -201,12 +195,10 @@ app.get("/urls/new", (req, res) => {
     };
     return res.render("urls_new", templateVars);
   }
-  return res.render('urls_login',
+  return res.render('login',
     {
       error: 'Authorization required, please login',
       email: null,
-      user_id: null,
-      email: null
     });
 });
 
@@ -229,13 +221,11 @@ app.get("/urls/:shortURL", (req, res) => {
     let templateVars = {
       shortURL: req.params.shortURL,
       longURL:  userUrl.longURL,
-      user_id: req.session.user_id,
-      email: users[req.params.shortURL].email
+      email: users[req.session.user_id].email
     };
     res.render("urls_show", templateVars);
   } else {
-    res.status(400)
-    .send(`A bear walks into a bar and says, “Give me a whiskey… and a cola.”`)
+    res.status(403).send('403 Forbidden');
   }
 });
 
