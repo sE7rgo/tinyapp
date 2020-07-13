@@ -10,8 +10,6 @@ app.set("view engine", "ejs");
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-
-
 app.use(cookieSession({
   name: 'session',
   keys: ['qwertasknxkcoiwokjsadkjhsad']
@@ -27,7 +25,6 @@ const urlDatabase = {
   iwkcdr: { longURL: "https://www.ign.com", userID: "userRandomID" },
   iwoikr: { longURL: "https://www.imdb.com", userID: "userRandomID" }
 };
-
 //----------------------display only users urls------------------
 const urlsForUser = function(id) {
   let userUrl = {};
@@ -52,9 +49,7 @@ const users = {
     password: "$2b$10$/qVwp3Z7RZBYNqTzdUsRgezGo.U/nQmcz24yFyGs/y9RFZWOXwRAy"
   }
 };
-
 //----------------------root page--------------------------------
-
 app.get("/", (req, res) => {
   if (!req.session.user_id){
     return res.redirect('/login');
@@ -66,9 +61,7 @@ app.get("/", (req, res) => {
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
-
 //----------------------home page--------------------------------
-
 app.get("/urls", (req, res) => {
   const userId = req.session.user_id;
   const userUrl = urlsForUser(userId);
@@ -86,9 +79,7 @@ app.get("/urls", (req, res) => {
     });
 }
 });
-
 //----------------------registration page-------------------------
-
 app.get("/register", (req, res) => {
   if (!req.session.user_id){
     let templateVars = {
@@ -129,9 +120,7 @@ app.post("/register", (req, res) => {
     return res.redirect('/urls');
   }
 });
-
 //----------------------login page--------------------------------  
-
 app.get('/login', (req, res) => {
   let templateVars = {
     email: null,
@@ -163,17 +152,12 @@ app.post('/login', (req, res) => {
     email: null,
   });
 });
-
-
 //---------------------- logout --------------------------------
-
 app.post('/logout', (req, res) => {
   req.session.user_id = null;
   res.redirect('/login');
 });
-
 //----------------------create new shortURL----------------------
-
 app.post("/urls/new", (req, res) => {
   const shortUrl = generateRandomString(6);
   const userId = req.session.user_id;
@@ -201,9 +185,7 @@ app.get("/urls/new", (req, res) => {
       email: null,
     });
 });
-
 //----------------------redirect to original longURL----------------
-
 app.get("/u/:shortURL", (req, res) => {
   if (urlDatabase[req.params.shortURL]) {
     res.redirect(`${urlDatabase[req.params.shortURL].longURL}`);
@@ -211,9 +193,7 @@ app.get("/u/:shortURL", (req, res) => {
     res.status(400).send('Bad Request');
   }
 });
-
 //----------------------shortURL page--------------------------------
-
 app.get("/urls/:shortURL", (req, res) => {
   const userUrls = urlsForUser(req.session.user_id);
   const userUrl = userUrls[req.params.shortURL];
@@ -228,9 +208,7 @@ app.get("/urls/:shortURL", (req, res) => {
     res.status(403).send('403 Forbidden');
   }
 });
-
 //----------------------modify longURL--------------------------------
-
 app.post('/urls/:shortURL', (req, res) => {
   const userId = req.session.user_id;
   const userUrls = urlsForUser(userId);
@@ -243,9 +221,7 @@ app.post('/urls/:shortURL', (req, res) => {
   }
   res.status(403).send('403 Forbidden');
 });
-
 //----------------------delete shortURL--------------------------------
-
 app.post('/urls/:shortURL/delete', (req, res) => {
   const userId = req.session.user_id;
   const shortURL = req.params.shortURL;
@@ -257,7 +233,6 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   }
   res.status(403).send('403 Forbidden');
 });
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
